@@ -24,6 +24,7 @@ import { writerAgent } from "../agents/writer.js";
 import { ClaudeClient } from "../model/anthropic.js";
 import { isPermanent, totalTokens, type ModelClient } from "../model/client.js";
 import { MockModel } from "../model/mock.js";
+import { OllamaClient } from "../model/ollama.js";
 import {
   envelope,
   type AgentName,
@@ -56,7 +57,12 @@ export function modelFor(config: RunConfig): ModelClient {
   if (config.model === "mock") return new MockModel({ faults: config.faults, latencyMs: config.mockLatencyMs });
   const key = `${config.model}/${config.effort}`;
   let c = clients.get(key);
-  if (!c) clients.set(key, (c = new ClaudeClient({ model: config.model, effort: config.effort })));
+  if (!c) {
+    c = config.model.startsWith("ollama:")
+      ? new OllamaClient({ model: config.model.slice("ollama:".length) })
+      : new ClaudeClient({ model: config.model, effort: config.effort });
+    clients.set(key, c);
+  }
   return c;
 }
 

@@ -28,7 +28,7 @@ run options
   --profile <file>        Candidate profile JSON (required)
   --criteria <file>       Search criteria JSON (required)
   --source <src>          fixture:<file> or himalayas (default: himalayas)
-  --model <id>            Claude model id, or "mock" for the offline model (default: claude-opus-5-5)
+  --model <id>            Claude model id, "ollama:<name>" for a local model, or "mock" (default: claude-opus-5-5)
   --effort <level>        low | medium | high | xhigh | max (default: medium)
   --faults <plan>         Mock only: "demo" or a JSON fault plan
   --time-limit <dur>      Stop the run after this long, e.g. 90s, 10m (default: 10m)
@@ -40,6 +40,7 @@ run options
   --step-timeout <dur>    Time limit for one step, repair rounds included (default: 3m)
   --run-id <id>           Use this id instead of a generated one
   --out <dir>             Where to save the report (default: runs)
+  --concurrency <n>       Writer and reviewer steps run at once (default: 4; use 1 for a local model)
   --no-workers            Only enqueue; let a separate "pipeline worker" process do the work
 
 Environment
@@ -84,11 +85,12 @@ async function run(argv: string[]) {
       "run-id": { type: "string" },
       out: { type: "string", default: "runs" },
       "no-workers": { type: "boolean", default: false },
+      concurrency: { type: "string", default: "4" },
     },
   });
   if (!v.profile || !v.criteria) throw new Error("run needs --profile and --criteria");
-  if (v.model !== "mock" && !process.env.ANTHROPIC_API_KEY) {
-    throw new Error(`--model ${v.model} needs ANTHROPIC_API_KEY; use --model mock to run offline`);
+  if (v.model !== "mock" && !v.model.startsWith("ollama:") && !process.env.ANTHROPIC_API_KEY) {
+    throw new Error(`--model ${v.model} needs ANTHROPIC_API_KEY; use --model mock or --model ollama:<name> to run without one`);
   }
   if (v.faults && v.model !== "mock") throw new Error("--faults only works with --model mock");
 
@@ -115,7 +117,7 @@ async function run(argv: string[]) {
   const redis = connect();
   const store = new RunStore(redis);
   const queues = new Queues(redis, store);
-  const workers = v["no-workers"] ? null : startWorkers({ connection: redis, store, queues, log });
+  const workers = v["no-workers"] ? null : startWorkers({ connection: redis, store, queues, log, concurrency: Number(v.concurrency) });
   try {
     const { id, config } = await startRun(store, queues, request, options, v["run-id"]);
     log(`${id}: started`);

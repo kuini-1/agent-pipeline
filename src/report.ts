@@ -109,13 +109,16 @@ export function renderReport(s: RunSnapshot): string {
 
   out.push("| | |", "|---|---|");
   out.push(`| Status | ${run.stopReason ? `stopped early: ${run.stopReason}` : "finished"} |`);
-  out.push(`| Model | \`${c.model}\`${mock ? "" : ` (effort ${c.effort})`}${models.length && !models.every((m) => m === c.model) ? `; served by ${models.map((m) => `\`${m}\``).join(", ")}` : ""} |`);
+  // Effort is a Claude setting; the mock and local models ignore it.
+  const effortNote = mock || c.model.startsWith("ollama:") ? "" : ` (effort ${c.effort})`;
+  out.push(`| Model | \`${c.model}\`${effortNote}${models.length && !models.every((m) => m === c.model) ? `; served by ${models.map((m) => `\`${m}\``).join(", ")}` : ""} |`);
   out.push(`| Job source | \`${c.source}\` (${jobs.length} postings) |`);
   out.push(`| Started | ${new Date(run.createdAt).toISOString()} |`);
   out.push(`| Duration | ${duration(finished - run.createdAt)} |`);
   out.push(`| Model calls | ${attempts.length} (${attempts.filter((a) => !a.ok).length} returned invalid output) |`);
   out.push(`| Tokens | ${n(run.tokens)}${mock ? " (estimated)" : ""} |`);
-  out.push(`| Cost | ${priced ? `$${cost.toFixed(4)} at list prices` : "none (mock model)"} |`);
+  const local = c.model.startsWith("ollama:");
+  out.push(`| Cost | ${priced ? `$${cost.toFixed(4)} at list prices` : mock ? "none (mock model)" : local ? "none (local model)" : "unknown (no price for this model)"} |`);
   out.push(
     `| Limits | ${duration(c.timeLimitMs)} per run, ${n(c.tokenBudget)} tokens, ${c.maxRevisions} revisions per job, ${c.maxRepairs} repair rounds per step, ${c.queueAttempts} deliveries per step |`,
   );
