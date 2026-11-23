@@ -32,7 +32,8 @@ jobs:
           node dist/cli.js run --profile examples/profile.json --criteria examples/criteria.json
           --source fixture:examples/jobs.json --model mock --faults demo --backoff 200ms --out runs
       - name: Check the demo outcome
-        run: grep -q "3 of 8 postings selected: 2 approved, 1 failed." runs/*.md
+        run: |
+          grep -q "3 of 8 postings selected: 2 approved, 1 failed." runs/*.md
 
   docker:
     runs-on: ubuntu-latest
