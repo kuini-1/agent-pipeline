@@ -4,9 +4,9 @@
 
 Three agents hand work to each other through Redis queues to turn a job search into reviewed applications. A **research** agent screens job postings against a candidate profile. A **writer** agent drafts a cover letter and resume bullets for each selected job. A **reviewer** agent approves each draft or sends it back with fixes. Every handoff is a typed message, every agent output is validated before it moves on, and each run ends with a Markdown report of everything that happened.
 
-TypeScript, BullMQ on Redis, zod schemas, and the Claude API with structured outputs.
+TypeScript, BullMQ on Redis, zod schemas, and the Claude API with structured outputs. Local models run through Ollama.
 
-**Example output:** [a run with injected failures](examples/runs/demo-faults.md) · [a run stopped by its token budget](examples/runs/token-budget.md) · [a run whose worker was killed mid-step](examples/runs/worker-crash.md)
+**Example output:** [a real run on a local model](examples/runs/local-qwen3-4b.md) · [a run with injected failures](examples/runs/demo-faults.md) · [a run stopped by its token budget](examples/runs/token-budget.md) · [a run whose worker was killed mid-step](examples/runs/worker-crash.md)
 
 ## What it does
 
@@ -169,7 +169,32 @@ Research rejected the other five postings: one below the salary floor, one US-on
 
 **About the mock model.** The mock (`src/model/mock.ts`) is rule-based: keyword overlap for research, a template filled with profile facts for the writer, and fixed checks for the reviewer. It exists to exercise the queueing, validation and recovery code without an API key. Its letters show the data flow, not writing quality. The reports say so at the top.
 
-**Not measured yet:** no run in this repository used the real Claude API, because no API key was available while building it. Token counts in the example reports are estimates (characters / 4), and there are no cost figures. The prompts in `src/agents/` are written for Claude but haven't been tuned against its real output.
+### A real run on a local model
+
+No Claude API key was available while this was built, so the real run uses qwen3-4b (instruct) through Ollama on an Apple M1: [`examples/runs/local-qwen3-4b.md`](examples/runs/local-qwen3-4b.md). The model writes everything; nothing is injected. Token counts are real; cost is none (local).
+
+```bash
+npm run pipeline -- run --profile examples/profile.json --criteria examples/criteria.json \
+  --source fixture:examples/jobs.json --model ollama:qwen3:4b-instruct --concurrency 1 --step-timeout 20m
+```
+
+| # | Job | Result | What happened |
+|---|---|---|---|
+| 1 | LLM Platform Engineer, Quillstack | approved, 9/10 | The first draft failed a content check. The repair round fixed it, and the reviewer approved it. |
+| 2 | AI Engineer, Retrieval, Tidewater Analytics | failed | Three drafts in a row came out at 177 words, against a minimum of 180. The word-count check rejected each one, and after 2 repair rounds the job failed. A 4B model can't count its own words. |
+| 3 | Applied AI Engineer, Brightloop | gave up | It took 2 repair rounds to get a valid draft. The reviewer then asked the letter to address the posting's Go requirement. The revision answered by calling a Redis job queue in Go "high-throughput Go services for heavy workloads". The reviewer flagged that as an unsupported claim, a blocker, in both remaining rounds, so the job ended as "gave up" instead of sending it. |
+
+The research step's choices were sound. It selected the same three postings as the mock, and rejected the other five for the right reasons: the salary floor, US-only, Europe-only, a data-analyst role, and a weaker match. 15 model calls, 6 of them invalid output, 41,034 tokens.
+
+What the run shows that the mock couldn't:
+
+- **The two lines of defense do different jobs.** The code check verifies that each claim's evidence is quoted from the profile, and it passed job 3's stretched claim, because the quote itself was genuine. Only the reviewer can judge whether the claim says more than the evidence, and it did, as a blocker, twice. The reviewer's own first round of feedback is what pushed the writer to overclaim, which is a good reason to keep both checks.
+- **The reviewer isn't consistent.** It approved job 1 at 9/10 with a similar stretch ("built Go services that queue and batch model calls"). It's a second opinion, not a guarantee.
+- **Content checks catch what a small model can't do reliably,** like a word count. Without them, job 2's 177-word letter would have gone out.
+
+The run took 34 minutes. That's longer than it should have, because the worker was also finishing queued jobs from an earlier run I had abandoned (see Lessons learned).
+
+**Not measured yet:** no run in this repository used the Claude API. The prompts in `src/agents/` are written for Claude and have only been exercised by the mock and by qwen3-4b.
 
 ## Running it
 
@@ -183,6 +208,10 @@ export REDIS_URL=redis://127.0.0.1:6379
 # Offline, with the mock model and the planned failures
 npm run pipeline -- run --profile examples/profile.json --criteria examples/criteria.json \
   --source fixture:examples/jobs.json --model mock --faults demo
+
+# A local model through Ollama (one request at a time)
+npm run pipeline -- run --profile examples/profile.json --criteria examples/criteria.json \
+  --source fixture:examples/jobs.json --model ollama:qwen3:4b-instruct --concurrency 1 --step-timeout 20m
 
 # With Claude, on live postings from the Himalayas API
 export ANTHROPIC_API_KEY=...
@@ -211,7 +240,7 @@ pipeline stop     <run-id>                                       cancel a run
 pipeline list                                                    recent runs
 ```
 
-`run` options: `--source fixture:<file>|himalayas`, `--model <claude-model-id>|mock`, `--effort low|medium|high|xhigh|max`, `--faults demo|<json>` (mock only), `--time-limit 10m`, `--token-budget 400000`, `--max-revisions 2`, `--max-repairs 2`, `--attempts 3`, `--backoff 2s`, `--step-timeout 3m`, `--run-id <id>`, `--out runs`, `--no-workers`. Run `pipeline help` for the full list.
+`run` options: `--source fixture:<file>|himalayas`, `--model <claude-model-id>|ollama:<name>|mock`, `--concurrency 4`, `--effort low|medium|high|xhigh|max`, `--faults demo|<json>` (mock only), `--time-limit 10m`, `--token-budget 400000`, `--max-revisions 2`, `--max-repairs 2`, `--attempts 3`, `--backoff 2s`, `--step-timeout 3m`, `--run-id <id>`, `--out runs`, `--no-workers`. Run `pipeline help` for the full list.
 
 Environment variables (see [`.env.example`](.env.example)): `REDIS_URL`, `ANTHROPIC_API_KEY`.
 
@@ -222,7 +251,7 @@ npm run typecheck
 REDIS_URL=redis://127.0.0.1:6379 npm test
 ```
 
-32 tests. The unit tests cover the repair loop (with a scripted model), every content check, and the mock model's behaviour. The end-to-end tests run the real workers on real Redis, with the mock or a wrapped model. They cover:
+36 tests. The unit tests cover the repair loop (with a scripted model), every content check, the mock model's behaviour, and the Ollama client against a fake Ollama server: the schema it sends, streamed replies, one request at a time, and which errors are retried. The end-to-end tests run the real workers on real Redis, with the mock or a wrapped model. They cover:
 
 - the demo run;
 - the token budget and time limit stops;
@@ -253,6 +282,7 @@ test/
 
 ## Model provider, APIs and licenses
 
+- **Local models through [Ollama](https://ollama.com)** (MIT), for runs without an API key. `src/model/ollama.ts` uses Ollama's native chat API, because its Anthropic-compatible endpoint ignores structured-output schemas. The example run used qwen3-4b instruct (Apache 2.0); the weights are downloaded by Ollama, not included here.
 - **Claude API**, through the official TypeScript SDK (`@anthropic-ai/sdk`, Apache 2.0). Default model `claude-opus-5-5` at effort `medium`, using structured outputs (`output_config.format`) and server-side refusal fallbacks (beta `server-side-fallback-2026-07-01`). Usage is billed to your Anthropic account under Anthropic's commercial terms. Prices in `src/model/pricing.ts` are list prices as of November 2026; update them if they change.
 - **Himalayas public jobs API**, only when `--source himalayas` is used. The client sends at most three searches per run, one second apart. Fetched postings are stored with the run in Redis and expire with it. They are never committed. Check Himalayas' API terms before using it beyond personal job searching.
 - **Example data** (the candidate, companies and postings in `examples/`) is fictional and was written for this project. Posting URLs point to `example.com`.
@@ -260,7 +290,8 @@ test/
 
 ## Limitations
 
-- The prompts have only been exercised by the mock model. Expect to tune them on the first real runs.
+- The prompts have been exercised by the mock model and by qwen3-4b, not by Claude. Expect to tune them on the first Claude runs.
+- A local model is slow: about 1-3 minutes per writer call on an M1. Use `--concurrency 1` and a long `--step-timeout`.
 - The evidence check proves that each listed claim is quoted from the profile, not that the letter lists every claim it makes. The reviewer is the second line of defense for claims the writer didn't list.
 - The token budget is checked between steps, so it can be overshot by the steps already running.
 - A crashed worker's steps wait for the lock to expire (30 s by default) before they run again.
@@ -272,4 +303,6 @@ test/
 - **Retry, repair and fail are three different responses.** Invalid output needs a repair round: the model sees the specific errors, which a blind retry doesn't tell it. Retrying the same call through the queue would pay for the same mistake up to three times. Network errors and overloads are the opposite: the call was fine, so retry it as is. Telling the two apart (`PermanentError` versus everything else) is what keeps the retry policy cheap.
 - **At-least-once delivery means every handoff has to be idempotent.** Using the envelope id as the queue job id, recording results with `HSETNX`, and decrementing the fan-in counter in the same Lua script made redelivered steps harmless. The research checkpoint matters too: without it, a redelivered research step could pick a different set of jobs than the writers already working on the first set.
 - **Text matching needs word boundaries.** Plain substring checks are too loose for short strings. For evidence, a two-letter fragment like "go" can sit inside unrelated text, but "Go" on its own is a real skill in the profile. Hence the rule: a whole field, or an excerpt of at least 12 characters. The mock's region check had the same problem with a live Himalayas fetch: it counted a job restricted to a country list that included "Malaysia" as open to Asia, because the word contains "asia".
+- **A queued request can outlive its HTTP timeout.** The first local run had three writer steps calling Ollama at once. Ollama serves one generation at a time, so the third request sat in Ollama's queue with no response yet, and Node's `fetch` gives up after waiting 300 s for response headers ("fetch failed", twice). The Ollama client now queues its own requests, one at a time per server, and streams the reply so headers arrive as soon as generation starts.
+- **Stopping the client doesn't stop the run.** I killed that first run's CLI to restart with the fix, but its jobs were still in Redis. The next run's worker picked them up and spent model calls on them until the abandoned run hit its time limit 90 minutes later. That's the design (any worker serves any run), so the fix is the command that already existed, `pipeline stop <run-id>`, not killing a process.
 - **Kill the worker, don't just test the happy path.** Killing a worker mid-step was the only way to see what crash recovery actually looks like: a 30-second gap, then the step starting again with the same delivery number. That's why the report detects restarts explicitly instead of showing a confusing second "started".
