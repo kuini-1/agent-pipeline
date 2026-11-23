@@ -1,0 +1,74 @@
+[
+  {
+    "id": "fx-quillstack-llm-platform",
+    "title": "LLM Platform Engineer",
+    "company": "Quillstack",
+    "url": "https://example.com/jobs/quillstack-llm-platform",
+    "location": "Remote, Worldwide",
+    "salary_monthly_usd": 6500,
+    "description": "Quillstack builds writing tools for legal teams, and every feature we ship runs on our internal LLM platform. You will own the retrieval layer (RAG over customer document sets), the evaluation suite that gates prompt and model changes, and the Go services that queue and batch model calls. Our stack is Go on the backend, TypeScript and React on the front end, PostgreSQL with pgvector, and Redis. We want someone who has run LLM features in production and can show how they measured quality. Fully remote across any timezone, with two hours of overlap with UTC+1."
+  },
+  {
+    "id": "fx-tidewater-retrieval",
+    "title": "AI Engineer, Retrieval",
+    "company": "Tidewater Analytics",
+    "url": "https://example.com/jobs/tidewater-ai-engineer",
+    "location": "Remote, APAC",
+    "salary_monthly_usd": 5200,
+    "description": "Tidewater turns port and shipping data into forecasts for logistics companies. We are hiring an AI engineer to build RAG search over contracts, bills of lading and customs filings, and to set up LLM evaluation so we know when answers get worse. You will work in Python and Go, with PostgreSQL and a vector search index. Experience with logistics or customs documents is a strong plus. Remote within APAC timezones."
+  },
+  {
+    "id": "fx-brightloop-applied-ai",
+    "title": "Applied AI Engineer",
+    "company": "Brightloop",
+    "url": "https://example.com/jobs/brightloop-applied-ai",
+    "location": "Remote, Worldwide",
+    "salary_monthly_usd": null,
+    "description": "Brightloop makes customer support software for small online shops. As an applied AI engineer you will build LLM features that triage, draft and route support tickets, in TypeScript on Node.js with a Go service for heavy jobs. You will design the prompts, the guardrails and the human-in-the-loop review flow, and you will track quality with real tickets. Remote anywhere; we pay the same bands worldwide."
+  },
+  {
+    "id": "fx-glimmer-ai-features",
+    "title": "Full-Stack Engineer, AI Features",
+    "company": "Glimmer Labs",
+    "url": "https://example.com/jobs/glimmer-ai-features",
+    "location": "Remote, Worldwide",
+    "salary_monthly_usd": 4800,
+    "description": "Glimmer Labs builds a design collaboration app. We want a full-stack engineer to add AI features: LLM-powered search across design files and auto-generated changelogs. You will work in TypeScript and React, with some PostgreSQL. Experience shipping user-facing features end to end matters more than research background."
+  },
+  {
+    "id": "fx-copperleaf-ml-intern",
+    "title": "Machine Learning Intern",
+    "company": "Copperleaf",
+    "url": "https://example.com/jobs/copperleaf-ml-intern",
+    "location": "Remote, Worldwide",
+    "salary_monthly_usd": 1200,
+    "description": "A six-month paid internship on the Copperleaf data team. You will clean datasets, train small classification models in Python and help evaluate an LLM summarization feature. Students and recent graduates welcome."
+  },
+  {
+    "id": "fx-harborline-senior-ai",
+    "title": "Senior AI Engineer",
+    "company": "Harborline",
+    "url": "https://example.com/jobs/harborline-senior-ai",
+    "location": "Remote, US only",
+    "salary_monthly_usd": 11000,
+    "description": "Harborline is hiring a senior AI engineer to lead RAG and agent work for our insurance claims product. Go and TypeScript services, PostgreSQL, Redis and Kubernetes. Candidates must live and be authorized to work in the United States."
+  },
+  {
+    "id": "fx-northpass-llm-engineer",
+    "title": "LLM Engineer",
+    "company": "Northpass",
+    "url": "https://example.com/jobs/northpass-llm-engineer",
+    "location": "Remote, Europe (UTC-1 to UTC+3)",
+    "salary_monthly_usd": 7000,
+    "description": "Northpass builds compliance tooling for European banks. You will build LLM pipelines with RAG over regulatory text, in Python and TypeScript. We hire within European timezones only, for regulatory reasons."
+  },
+  {
+    "id": "fx-meridian-data-analyst",
+    "title": "Data Analyst",
+    "company": "Meridian Goods",
+    "url": "https://example.com/jobs/meridian-data-analyst",
+    "location": "Remote, Worldwide",
+    "salary_monthly_usd": 4000,
+    "description": "Meridian Goods is a home goods retailer. You will own weekly sales dashboards, write SQL against our warehouse and present findings to the merchandising team. Experience with Looker or Tableau required."
+  }
+]

@@ -1,0 +1,47 @@
+{
+  "_note": "Fictional candidate for demos and tests. Not a real person.",
+  "name": "Riley Tan",
+  "headline": "Senior full-stack engineer building LLM applications in Go and TypeScript",
+  "location": "Chiang Mai, Thailand",
+  "remote_only": true,
+  "years_experience": 9,
+  "skills": ["Go", "TypeScript", "Python", "PostgreSQL", "Redis", "Docker", "RAG", "LLM evaluation", "vector search", "React", "Kubernetes"],
+  "experience": [
+    {
+      "company": "Lumen Freight",
+      "role": "Senior Software Engineer",
+      "period": "2022-2026",
+      "highlights": [
+        "Built a RAG pipeline over 1.2 million shipping documents so support agents could answer customs questions with one search instead of five.",
+        "Designed an LLM evaluation harness with 400 graded test cases that caught three prompt regressions before release.",
+        "Moved document ingestion from cron scripts to a Redis job queue in Go, cutting failed imports from about 40 a week to 2."
+      ]
+    },
+    {
+      "company": "Patchwork Health",
+      "role": "Full-Stack Engineer",
+      "period": "2019-2022",
+      "highlights": [
+        "Shipped a TypeScript and Go appointment platform used by 60 clinics across Southeast Asia.",
+        "Wrote the PostgreSQL schema and migration tooling the team used for zero-downtime deploys.",
+        "Mentored four junior engineers through code review and weekly pairing sessions."
+      ]
+    },
+    {
+      "company": "Orbit Studio",
+      "role": "Software Developer",
+      "period": "2017-2019",
+      "highlights": ["Built React and Node.js web apps for 15 client projects, from scoping calls to production launch."]
+    }
+  ],
+  "projects": [
+    {
+      "name": "ticket-triage",
+      "summary": "An open-source tool that routes support tickets to the right team with an LLM classifier and sends low-confidence cases to a human."
+    },
+    {
+      "name": "gateway-lite",
+      "summary": "A small Go proxy that adds per-key budgets and response caching in front of LLM APIs."
+    }
+  ]
+}
