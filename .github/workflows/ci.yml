@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 3s --health-retries 20
+    env:
+      REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      # Includes the end-to-end tests, which run against the Redis service.
+      - run: npm test
+      - run: npm run build
+      - name: Demo run with the mock model
+        run: >-
+          node dist/cli.js run --profile examples/profile.json --criteria examples/criteria.json
+          --source fixture:examples/jobs.json --model mock --faults demo --backoff 200ms --out runs
+      - name: Check the demo outcome
+        run: grep -q "3 of 8 postings selected: 2 approved, 1 failed." runs/*.md
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: docker build -t agent-pipeline .
+      - run: docker run --rm agent-pipeline help

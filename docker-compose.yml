@@ -1,0 +1,39 @@
+# docker compose up -d worker                 Redis + one worker process
+# docker compose up -d --scale worker=3       more workers on the same queues
+# docker compose run --rm cli run --profile examples/profile.json --criteria examples/criteria.json \
+#   --source fixture:examples/jobs.json --model mock --faults demo --no-workers
+#                                             enqueue a run for the workers
+# docker compose run --rm cli report <run-id> print its report
+services:
+  redis:
+    image: redis:7-alpine
+    # Append-only file, so queued work and run state survive a Redis restart.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 20
+
+  worker:
+    build: .
+    command: ["worker", "--concurrency", "4"]
+    environment:
+      REDIS_URL: redis://redis:6379
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  cli:
+    build: .
+    profiles: ["cli"]
+    environment:
+      REDIS_URL: redis://redis:6379
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes: ["./runs:/app/runs"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+volumes:
+  redis-data: {}
