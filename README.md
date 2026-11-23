@@ -253,7 +253,7 @@ test/
 
 ## Model provider, APIs and licenses
 
-- **Claude API**, through the official TypeScript SDK (`@anthropic-ai/sdk`, MIT). Default model `claude-opus-5-5` at effort `medium`, using structured outputs (`output_config.format`) and server-side refusal fallbacks (beta `server-side-fallback-2026-07-01`). Usage is billed to your Anthropic account under Anthropic's commercial terms. Prices in `src/model/pricing.ts` are list prices as of November 2026; update them if they change.
+- **Claude API**, through the official TypeScript SDK (`@anthropic-ai/sdk`, Apache 2.0). Default model `claude-opus-5-5` at effort `medium`, using structured outputs (`output_config.format`) and server-side refusal fallbacks (beta `server-side-fallback-2026-07-01`). Usage is billed to your Anthropic account under Anthropic's commercial terms. Prices in `src/model/pricing.ts` are list prices as of November 2026; update them if they change.
 - **Himalayas public jobs API**, only when `--source himalayas` is used. The client sends at most three searches per run, one second apart. Fetched postings are stored with the run in Redis and expire with it. They are never committed. Check Himalayas' API terms before using it beyond personal job searching.
 - **Example data** (the candidate, companies and postings in `examples/`) is fictional and was written for this project. Posting URLs point to `example.com`.
 - **Dependencies:** BullMQ (MIT), ioredis (MIT), zod (MIT). The compose file uses the official `redis:7-alpine` image. Redis 7.4 and later are dual-licensed RSALv2/SSPLv1, which allows self-hosting like this. A BSD-licensed fork such as Valkey should also work, but hasn't been tested here.
